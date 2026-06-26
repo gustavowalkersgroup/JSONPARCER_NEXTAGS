@@ -3,7 +3,10 @@ import { Codes, diag } from '../errors';
 
 // Remove MARKDOWN-PADRÃO que vaza literal para o cliente, preservando o
 // WA-markup (`*negrito*`, `_itálico_`, `~tachado~`) e emojis.
-export function normalizeText(input: string, opts: ResolvedOptions): { text: string; changed: boolean } {
+export function normalizeText(
+  input: string,
+  opts: ResolvedOptions,
+): { text: string; changed: boolean } {
   if (!opts.normalize.stripStandardMarkdown) return { text: input, changed: false };
   let s = input;
   s = s.replace(/\[([^\]]+)\]\((?:[^)]+)\)/g, '$1'); // links [txt](url) → txt
@@ -25,7 +28,8 @@ export function normalizePayloadText(
   const apply = (v: string | undefined): string | undefined => {
     if (typeof v !== 'string') return v;
     const r = normalizeText(v, opts);
-    if (r.changed) diagnostics.push(diag(Codes.REPAIR_MARKDOWN_STRIPPED, 'Markdown-padrão removido'));
+    if (r.changed)
+      diagnostics.push(diag(Codes.REPAIR_MARKDOWN_STRIPPED, 'Markdown-padrão removido'));
     return r.text;
   };
 

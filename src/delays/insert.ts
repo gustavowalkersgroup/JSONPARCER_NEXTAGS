@@ -23,8 +23,10 @@ export function insertDelays(
   for (let i = 0; i < msgs.length; i++) {
     if (i > 0) {
       let kind: TransitionType;
-      if (intraGap.has(i - 1)) kind = 'intraCard'; // imagem(i-1) → template(i)
-      else if (cardStart.has(i) && seenCard) kind = 'interProduct'; // antes da imagem de um novo produto
+      if (intraGap.has(i - 1))
+        kind = 'intraCard'; // imagem(i-1) → template(i)
+      else if (cardStart.has(i) && seenCard)
+        kind = 'interProduct'; // antes da imagem de um novo produto
       else kind = 'default';
       const base =
         kind === 'intraCard' ? d.intraCard : kind === 'interProduct' ? d.interProduct : d.bubble;

@@ -7,7 +7,11 @@ test('classifies items', () => {
       { message: { text: 'a' } },
       4,
       { message: { attachment: { type: 'image', payload: { url: 'u' } } } },
-      { message: { attachment: { type: 'template', payload: { template_type: 'button', text: 't' } } } },
+      {
+        message: {
+          attachment: { type: 'template', payload: { template_type: 'button', text: 't' } },
+        },
+      },
     ]),
   ).toEqual(['TEXT', 'DELAY', 'IMAGE', 'TEMPLATE']);
 });

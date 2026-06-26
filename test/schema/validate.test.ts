@@ -8,7 +8,11 @@ test('removes web_url button without url', () => {
         message: {
           attachment: {
             type: 'template',
-            payload: { template_type: 'button', text: 't', buttons: [{ type: 'web_url', title: 'x' }] },
+            payload: {
+              template_type: 'button',
+              text: 't',
+              buttons: [{ type: 'web_url', title: 'x' }],
+            },
           },
         },
       },

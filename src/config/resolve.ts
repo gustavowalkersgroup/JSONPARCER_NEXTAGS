@@ -26,8 +26,10 @@ export function resolveOptions(o: MiddlewareOptions = {}): ResolvedOptions {
       handoff: o.fallback?.handoff !== undefined ? o.fallback.handoff : d.fallback.handoff,
     },
     normalize: {
-      stripStandardMarkdown: o.normalize?.stripStandardMarkdown ?? d.normalize.stripStandardMarkdown,
-      preserveWhatsappMarkup: o.normalize?.preserveWhatsappMarkup ?? d.normalize.preserveWhatsappMarkup,
+      stripStandardMarkdown:
+        o.normalize?.stripStandardMarkdown ?? d.normalize.stripStandardMarkdown,
+      preserveWhatsappMarkup:
+        o.normalize?.preserveWhatsappMarkup ?? d.normalize.preserveWhatsappMarkup,
       straightenQuotes: o.normalize?.straightenQuotes ?? d.normalize.straightenQuotes,
     },
     parser: {

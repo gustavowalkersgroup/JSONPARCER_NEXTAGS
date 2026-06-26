@@ -21,7 +21,8 @@ export function computeStats(
     if (it.message.attachment?.type === 'image') imageCount++;
   }
 
-  const productCount = detectProducts(messages.filter((m) => typeof m !== 'number')).cardPairs.length;
+  const productCount = detectProducts(messages.filter((m) => typeof m !== 'number')).cardPairs
+    .length;
 
   return {
     totalDurationSec,

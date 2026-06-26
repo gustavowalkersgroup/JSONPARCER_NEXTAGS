@@ -2,7 +2,9 @@ import { expect, test } from 'vitest';
 import { detectProducts } from '../../src/delays/blocks';
 import type { MessageItem } from '../../src/types';
 
-const img = (): MessageItem => ({ message: { attachment: { type: 'image', payload: { url: 'u' } } } });
+const img = (): MessageItem => ({
+  message: { attachment: { type: 'image', payload: { url: 'u' } } },
+});
 const tmpl = (): MessageItem => ({
   message: { attachment: { type: 'template', payload: { template_type: 'button', text: 't' } } },
 });

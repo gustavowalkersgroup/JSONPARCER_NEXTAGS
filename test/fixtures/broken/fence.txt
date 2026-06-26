@@ -1,0 +1,5 @@
+Claro, aqui está:
+```json
+{"messages":[{"message":{"text":"oi"}}]}
+```
+Espero ter ajudado!

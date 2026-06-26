@@ -1,4 +1,10 @@
-import type { Attachment, Diagnostic, NexTagsPayload, ResolvedOptions, TemplateElement } from '../types';
+import type {
+  Attachment,
+  Diagnostic,
+  NexTagsPayload,
+  ResolvedOptions,
+  TemplateElement,
+} from '../types';
 import { Codes, diag } from '../errors';
 import { normalizeUrl, looksUnverifiable } from './url';
 
@@ -26,7 +32,9 @@ export function rewriteImages(
       return { url: proxyUrl(img.proxyBase, n.url) };
     }
     if (looksUnverifiable(n.url) && img.removeUnverifiable) {
-      diagnostics.push(diag(Codes.PENDING_IMAGE_UNVERIFIABLE, `Imagem não-garantível removida: ${n.url}`));
+      diagnostics.push(
+        diag(Codes.PENDING_IMAGE_UNVERIFIABLE, `Imagem não-garantível removida: ${n.url}`),
+      );
       return { remove: true };
     }
     return { url: n.url };

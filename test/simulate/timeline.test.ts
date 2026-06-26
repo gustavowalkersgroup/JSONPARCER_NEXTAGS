@@ -6,7 +6,11 @@ test('renders timeline with cumulative seconds', () => {
     messages: [
       { message: { attachment: { type: 'image', payload: { url: 'u' } } } },
       4,
-      { message: { attachment: { type: 'template', payload: { template_type: 'button', text: 't' } } } },
+      {
+        message: {
+          attachment: { type: 'template', payload: { template_type: 'button', text: 't' } },
+        },
+      },
     ],
   });
   expect(sim.stats.totalDurationSec).toBe(4);

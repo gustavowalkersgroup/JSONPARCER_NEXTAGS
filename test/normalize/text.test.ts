@@ -21,10 +21,7 @@ test('does not strip hashtags without trailing space', () => {
 });
 
 test('normalizePayloadText cleans text fields', () => {
-  const r = normalizePayloadText(
-    { messages: [{ message: { text: '**oi**' } }] },
-    o,
-  );
+  const r = normalizePayloadText({ messages: [{ message: { text: '**oi**' } }] }, o);
   expect((r.payload.messages![0] as { message: { text: string } }).message.text).toBe('oi');
   expect(r.diagnostics.some((d) => d.code === 'REPAIR_MARKDOWN_STRIPPED')).toBe(true);
 });

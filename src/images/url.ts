@@ -1,7 +1,10 @@
 import type { ResolvedOptions } from '../types';
 
 // Normaliza a URL removendo a query string (`...a.webp.jpg?v=123` → `...a.webp.jpg`).
-export function normalizeUrl(url: string, opts: ResolvedOptions): { url: string; changed: boolean } {
+export function normalizeUrl(
+  url: string,
+  opts: ResolvedOptions,
+): { url: string; changed: boolean } {
   if (!opts.image.stripQuery) return { url, changed: false };
   const stripped = url.split('?')[0] ?? url;
   return { url: stripped, changed: stripped !== url };

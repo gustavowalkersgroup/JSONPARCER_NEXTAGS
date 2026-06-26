@@ -25,7 +25,10 @@ export function coerceStructure(value: unknown): {
         att.type = att.payload.type as string;
         delete att.payload.type;
         diagnostics.push(
-          diag(Codes.REPAIR_TYPE_MOVED_OUT_OF_PAYLOAD, 'attachment.type movido para fora do payload'),
+          diag(
+            Codes.REPAIR_TYPE_MOVED_OUT_OF_PAYLOAD,
+            'attachment.type movido para fora do payload',
+          ),
         );
       }
     }

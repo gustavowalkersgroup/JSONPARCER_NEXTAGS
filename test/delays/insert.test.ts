@@ -3,14 +3,18 @@ import { insertDelays } from '../../src/delays/insert';
 import { resolveOptions } from '../../src/config/resolve';
 import type { MessageItem } from '../../src/types';
 
-const img = (): MessageItem => ({ message: { attachment: { type: 'image', payload: { url: 'u' } } } });
+const img = (): MessageItem => ({
+  message: { attachment: { type: 'image', payload: { url: 'u' } } },
+});
 const tmpl = (): MessageItem => ({
   message: { attachment: { type: 'template', payload: { template_type: 'button', text: 't' } } },
 });
 const txt = (): MessageItem => ({ message: { text: 'a' } });
 
 const kinds = (ms: MessageItem[]): (string | number)[] =>
-  ms.map((m) => (typeof m === 'number' ? m : m.message.attachment ? m.message.attachment.type : 'text'));
+  ms.map((m) =>
+    typeof m === 'number' ? m : m.message.attachment ? m.message.attachment.type : 'text',
+  );
 
 test('single product with surrounding text → 4/4/4', () => {
   const r = insertDelays([txt(), img(), tmpl(), txt()], resolveOptions());
@@ -28,6 +32,9 @@ test('idempotent: existing delays removed then reinserted', () => {
 });
 
 test('respects per-transition override', () => {
-  const r = insertDelays([img(), tmpl(), img(), tmpl()], resolveOptions({ delays: { perTransition: { interProduct: 12 } } }));
+  const r = insertDelays(
+    [img(), tmpl(), img(), tmpl()],
+    resolveOptions({ delays: { perTransition: { interProduct: 12 } } }),
+  );
   expect(kinds(r.messages)).toEqual(['image', 4, 'template', 12, 'image', 4, 'template']);
 });

@@ -6,14 +6,14 @@
   "engines": { "node": ">=20" },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./proxy": {
+      "types": "./dist/proxy.d.ts",
       "import": "./dist/proxy.mjs",
-      "require": "./dist/proxy.cjs",
-      "types": "./dist/proxy.d.ts"
+      "require": "./dist/proxy.cjs"
     }
   },
   "files": ["dist"],

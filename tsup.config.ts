@@ -23,9 +23,10 @@ export default defineConfig([
       return { js: format === 'cjs' ? '.cjs' : '.mjs' };
     },
   },
-  // Bundle de card: IIFE autossuficiente, zod/jsonrepair inlinados, zero require externo
+  // Bundle de card: IIFE autossuficiente, zod/jsonrepair inlinados, zero require
+  // externo. tsup acrescenta ".global.js" ao formato iife → dist/card.global.js.
   {
-    entry: { 'card.global': 'src/index.ts' },
+    entry: { card: 'src/index.ts' },
     format: ['iife'],
     globalName: 'WAMW',
     noExternal: ['zod', 'jsonrepair'],

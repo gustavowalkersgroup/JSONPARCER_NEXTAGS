@@ -52,15 +52,33 @@ export function tokenize(s: string): Token[] {
         if (d === '\\') {
           const n = s[j + 1];
           switch (n) {
-            case 'n': val += '\n'; break;
-            case 't': val += '\t'; break;
-            case 'r': val += '\r'; break;
-            case 'b': val += '\b'; break;
-            case 'f': val += '\f'; break;
-            case '/': val += '/'; break;
-            case '"': val += '"'; break;
-            case "'": val += "'"; break;
-            case '\\': val += '\\'; break;
+            case 'n':
+              val += '\n';
+              break;
+            case 't':
+              val += '\t';
+              break;
+            case 'r':
+              val += '\r';
+              break;
+            case 'b':
+              val += '\b';
+              break;
+            case 'f':
+              val += '\f';
+              break;
+            case '/':
+              val += '/';
+              break;
+            case '"':
+              val += '"';
+              break;
+            case "'":
+              val += "'";
+              break;
+            case '\\':
+              val += '\\';
+              break;
             case 'u': {
               const hex = s.slice(j + 2, j + 6);
               if (/^[0-9a-fA-F]{4}$/.test(hex)) {

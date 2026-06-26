@@ -5,8 +5,11 @@ test('moves attachment.type out of payload', () => {
   const r = coerceStructure({
     messages: [{ message: { attachment: { payload: { type: 'image', url: 'u' } } } }],
   });
-  const att = (r.value.messages![0] as { message: { attachment: { type: string; payload: Record<string, unknown> } } })
-    .message.attachment;
+  const att = (
+    r.value.messages![0] as {
+      message: { attachment: { type: string; payload: Record<string, unknown> } };
+    }
+  ).message.attachment;
   expect(att.type).toBe('image');
   expect(att.payload.type).toBeUndefined();
   expect(r.diagnostics.some((d) => d.code === 'REPAIR_TYPE_MOVED_OUT_OF_PAYLOAD')).toBe(true);

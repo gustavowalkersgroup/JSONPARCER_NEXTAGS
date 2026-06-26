@@ -9,7 +9,9 @@ const EXAMPLE = JSON.stringify({
       message: {
         attachment: {
           type: 'image',
-          payload: { url: 'https://cdn.shopify.com/s/files/x/Unitario_OSA_1024x.webp.jpg?v=1778503411' },
+          payload: {
+            url: 'https://cdn.shopify.com/s/files/x/Unitario_OSA_1024x.webp.jpg?v=1778503411',
+          },
         },
       },
     },
@@ -50,7 +52,9 @@ test('irrecoverable → fallback message + handoff, ok=false', () => {
     fallback: { message: 'Já te respondo', handoff: { action: 'send_flow', flow_id: '123' } },
   });
   expect(r.ok).toBe(false);
-  expect((r.data!.messages![0] as { message: { text: string } }).message.text).toBe('Já te respondo');
+  expect((r.data!.messages![0] as { message: { text: string } }).message.text).toBe(
+    'Já te respondo',
+  );
   expect(r.data!.actions![0]).toEqual({ action: 'send_flow', flow_id: '123' });
 });
 
