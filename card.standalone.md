@@ -1,34 +1,30 @@
-// ============================================================================
-//  whatsapp-ai-middleware — CARD ÚNICO (NexTags / n8n Code node, "Run Once for All Items").
-//  VERSÃO DESCRITIVA (referência). Pra colar no node, use o código limpo de card.standalone.md.
-//
-//  Entra pelo campo resposta_ia, sai pelo campo resposta_limpa (+ _debug interno).
-//  A NexTags referencia esses campos como {{resposta_ia}} / {{resposta_limpa}} em outros nodes — não renomeie.
-//
-//  Vanilla JS, zero deps. Repara JSON quebrado, valida/normaliza, reescreve imagens
-//  pelo proxy, insere delays entre blocos imagem→template e devolve SÓ o JSON validado.
-//  Aqui o report carrega `message` legível em cada entrada (o .md guarda só os códigos).
-// ============================================================================
+# card.standalone — código limpo (colar no Code node NexTags)
 
-// ===== CONFIG — edite só aqui =====
+Versão enxuta, report = só códigos. Entra por `resposta_ia`, sai por `resposta_limpa`.
+Descritivo (o que cada código significa) fica em `card.standalone.js`.
+
+```js
+// whatsapp-ai-middleware — CARD ÚNICO (NexTags / n8n Code node, "Run Once for All Items").
+// Entra pelo campo resposta_ia, sai pelo campo resposta_limpa.
+// A NexTags referencia esses campos como {{resposta_ia}} / {{resposta_limpa}} em outros nodes — não renomeie.
+
 const CONFIG = {
-  inputField: 'resposta_ia',     // campo com a saída crua da IA
-  clientField: 'resposta_limpa', // campo que vai pro cliente (só o JSON validado)
-  debugField: '_debug',          // diagnóstico interno — NUNCA mande pro cliente
-  stringifyClient: true,         // true: resposta como string JSON; false: objeto
-  image: { strategy: 'proxy', proxyBase: 'https://nextags.app.br/webhook/cf-img-proxy', stripQuery: true }, // strategy: 'proxy' | 'detect-only'
+  inputField: 'resposta_ia',
+  clientField: 'resposta_limpa',
+  debugField: '_debug',
+  stringifyClient: true,
+  image: { strategy: 'proxy', proxyBase: 'https://nextags.app.br/webhook/cf-img-proxy', stripQuery: true },
   delays: { intraCard: 4, interProduct: 7, bubble: 4, min: 1, max: 30 },
   fallbackMessage: 'Só um instante que já te respondo 😊',
 };
 
 function buildMiddleware(CFG) {
-  const push = (rep, kind, code, msg) => rep[kind].push({ code, message: msg });
+  const push = (rep, kind, code) => rep[kind].push({ code });
 
-  // ---- extrai o objeto JSON do texto cru (tira cerca markdown + casa chaves) ----
   function extract(raw, rep) {
     let s = String(raw == null ? '' : raw).trim();
     const fence = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-    if (fence && fence[1]) { s = fence[1].trim(); push(rep, 'repairs', 'REPAIR_FENCE_STRIPPED', 'cerca markdown removida'); }
+    if (fence && fence[1]) { s = fence[1].trim(); push(rep, 'repairs', 'REPAIR_FENCE_STRIPPED'); }
     const start = s.indexOf('{');
     if (start === -1) return s;
     let depth = 0, inStr = false, esc = false, end = -1;
@@ -42,10 +38,9 @@ function buildMiddleware(CFG) {
     return end === -1 ? s.slice(start) : s.slice(start, end + 1);
   }
 
-  // ---- conserta aspas tipográficas + vírgula final (fast-path pro JSON.parse) ----
   function repairText(input, rep) {
     let s = input;
-    if (/[“”‘’]/.test(s)) { s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"); push(rep, 'repairs', 'REPAIR_SMART_QUOTES', 'aspas tipográficas normalizadas'); }
+    if (/[“”‘’]/.test(s)) { s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"); push(rep, 'repairs', 'REPAIR_SMART_QUOTES'); }
     let out = '', inStr = false, esc = false, changed = false;
     for (let i = 0; i < s.length; i++) {
       const c = s[i];
@@ -54,11 +49,10 @@ function buildMiddleware(CFG) {
       if (c === ',') { let j = i + 1; while (j < s.length && /\s/.test(s[j])) j++; if (s[j] === '}' || s[j] === ']') { changed = true; continue; } }
       out += c;
     }
-    if (changed) push(rep, 'repairs', 'REPAIR_TRAILING_COMMA', 'vírgula final removida');
+    if (changed) push(rep, 'repairs', 'REPAIR_TRAILING_COMMA');
     return out;
   }
 
-  // ---- tokenizer tolerante: single quotes, escapes e truncamento ----
   const SINGLE = { '{': 'lbrace', '}': 'rbrace', '[': 'lbracket', ']': 'rbracket', ':': 'colon', ',': 'comma' };
   const ESC = { n: '\n', t: '\t', r: '\r', b: '\b', f: '\f', '/': '/', '"': '"', "'": "'", '\\': '\\' };
   function tokenize(s) {
@@ -93,7 +87,6 @@ function buildMiddleware(CFG) {
     return t;
   }
 
-  // ---- parser recursivo com auto-fecho de objetos/arrays truncados ----
   function parseTokens(tokens, rep) {
     let i = 0;
     const peek = () => tokens[i], next = () => tokens[i++], eof = () => i >= tokens.length;
@@ -116,7 +109,7 @@ function buildMiddleware(CFG) {
         if (peek() && peek().kind === 'colon') next();
         obj[key] = parseValue();
       }
-      push(rep, 'repairs', 'REPAIR_AUTOCLOSED', 'objeto truncado auto-fechado'); return obj;
+      push(rep, 'repairs', 'REPAIR_AUTOCLOSED'); return obj;
     }
     function parseArray() {
       next(); const arr = [];
@@ -126,7 +119,7 @@ function buildMiddleware(CFG) {
         if (t.kind === 'comma') { next(); continue; }
         arr.push(parseValue());
       }
-      push(rep, 'repairs', 'REPAIR_AUTOCLOSED', 'array truncado auto-fechado'); return arr;
+      push(rep, 'repairs', 'REPAIR_AUTOCLOSED'); return arr;
     }
     if (eof()) throw new Error('sem tokens');
     return parseValue();
@@ -139,7 +132,6 @@ function buildMiddleware(CFG) {
     throw new Error('JSON irrecuperável');
   }
 
-  // ---- ações: transfer-to-human vira PENDÊNCIA (não é emitida); resto é canonicalizado ----
   const ALIASES = {
     addtag: 'add_tag', 'add-tag': 'add_tag', tag_add: 'add_tag',
     removetag: 'remove_tag', 'remove-tag': 'remove_tag', tag_remove: 'remove_tag',
@@ -148,22 +140,21 @@ function buildMiddleware(CFG) {
     sendflow: 'send_flow', 'send-flow': 'send_flow', trigger_flow: 'send_flow', flow: 'send_flow',
   };
   const CANON = new Set(['add_tag', 'remove_tag', 'set_field_value', 'unset_field_value', 'send_flow']);
-  const HANDOFF = /transfer|assign|human/i; // transferir/atribuir conversa pra humano = pendência, não ação emitida
+  const HANDOFF = /transfer|assign|human/i;
   function canonicalizeActions(actions, rep) {
     const out = [];
     for (const a of actions) {
       const name = String((a && a.action) || '');
-      if (HANDOFF.test(name)) { push(rep, 'pending', 'PENDING_HANDOFF', 'transferência pra humano pendente: ' + name); continue; }
-      if (/\(\)|\{\{|\}\}/.test(name)) { push(rep, 'pending', 'PENDING_LEGACY_ACTION', 'ação legada removida: ' + name); continue; }
+      if (HANDOFF.test(name)) { push(rep, 'pending', 'PENDING_HANDOFF'); continue; }
+      if (/\(\)|\{\{|\}\}/.test(name)) { push(rep, 'pending', 'PENDING_LEGACY_ACTION'); continue; }
       const key = name.toLowerCase().replace(/\s/g, '');
       const canon = CANON.has(name) ? name : ALIASES[key];
-      if (canon && canon !== name) push(rep, 'repairs', 'REPAIR_ACTION_ALIAS', name + ' → ' + canon);
+      if (canon && canon !== name) push(rep, 'repairs', 'REPAIR_ACTION_ALIAS');
       out.push(Object.assign({}, a, { action: canon || name }));
     }
     return out;
   }
 
-  // ---- coerção estrutural: garante messages/actions e move type pra fora do payload ----
   function coerceStructure(value, rep) {
     const v = value && typeof value === 'object' ? value : {};
     const messages = Array.isArray(v.messages) ? v.messages : undefined;
@@ -173,7 +164,7 @@ function buildMiddleware(CFG) {
       const att = item && item.message && item.message.attachment;
       if (att && att.payload && typeof att.payload === 'object' && att.payload.type && !att.type) {
         att.type = att.payload.type; delete att.payload.type;
-        push(rep, 'repairs', 'REPAIR_TYPE_MOVED_OUT_OF_PAYLOAD', 'type movido pra fora do payload');
+        push(rep, 'repairs', 'REPAIR_TYPE_MOVED_OUT_OF_PAYLOAD');
       }
     }
     if (actions) actions = canonicalizeActions(actions, rep);
@@ -185,15 +176,14 @@ function buildMiddleware(CFG) {
     return { value: out, fatal: !hasMsg && !hasAct };
   }
 
-  // ---- validação corretiva de anexos, botões e typing ----
   const VALID_ATTACH = new Set(['image', 'video', 'audio', 'file', 'template']);
   function fixButtons(buttons, rep) {
     let web = 0;
     return buttons.filter((b) => {
-      if (b.type === 'web_url' && !b.url) { push(rep, 'errors', 'ERR_BUTTON_MISSING_FIELD', 'web_url sem url'); return false; }
-      if (b.type === 'postback' && !b.payload) { push(rep, 'errors', 'ERR_BUTTON_MISSING_FIELD', 'postback sem payload'); return false; }
-      if (b.type === 'web_url' && ++web > 1) { push(rep, 'warnings', 'WARN_MULTIPLE_WEB_URL', '>1 botão web_url'); return false; }
-      if (b.title && b.title.length > 20) push(rep, 'warnings', 'WARN_CTA_TOO_LONG', 'CTA >20: ' + b.title);
+      if (b.type === 'web_url' && !b.url) { push(rep, 'errors', 'ERR_BUTTON_MISSING_FIELD'); return false; }
+      if (b.type === 'postback' && !b.payload) { push(rep, 'errors', 'ERR_BUTTON_MISSING_FIELD'); return false; }
+      if (b.type === 'web_url' && ++web > 1) { push(rep, 'warnings', 'WARN_MULTIPLE_WEB_URL'); return false; }
+      if (b.title && b.title.length > 20) push(rep, 'warnings', 'WARN_CTA_TOO_LONG');
       return true;
     });
   }
@@ -202,17 +192,17 @@ function buildMiddleware(CFG) {
     payload.messages = payload.messages.map((item) => {
       if (typeof item === 'number') {
         const n = Math.round(item);
-        if (n < 1 || n > 30) { push(rep, 'repairs', 'REPAIR_TYPING_CLAMPED', 'typing fora de 1-30'); return Math.min(30, Math.max(1, n)); }
+        if (n < 1 || n > 30) { push(rep, 'repairs', 'REPAIR_TYPING_CLAMPED'); return Math.min(30, Math.max(1, n)); }
         return n;
       }
       const att = item && item.message && item.message.attachment;
       if (att) {
-        if (!VALID_ATTACH.has(att.type)) { push(rep, 'errors', 'ERR_INVALID_ATTACHMENT_TYPE', 'type inválido: ' + att.type); return null; }
+        if (!VALID_ATTACH.has(att.type)) { push(rep, 'errors', 'ERR_INVALID_ATTACHMENT_TYPE'); return null; }
         if (att.type === 'template') {
           const p = att.payload || {};
-          if (p.template_type === 'generic' && (!Array.isArray(p.elements) || p.elements.length < 2)) { push(rep, 'errors', 'ERR_CAROUSEL_TOO_SMALL', 'carrossel <2'); return null; }
+          if (p.template_type === 'generic' && (!Array.isArray(p.elements) || p.elements.length < 2)) { push(rep, 'errors', 'ERR_CAROUSEL_TOO_SMALL'); return null; }
           if (p.template_type === 'button') {
-            if (!p.text) push(rep, 'pending', 'PENDING_BUTTON_MISSING_TEXT', 'button sem text');
+            if (!p.text) push(rep, 'pending', 'PENDING_BUTTON_MISSING_TEXT');
             if (Array.isArray(p.buttons)) p.buttons = fixButtons(p.buttons, rep);
           }
         }
@@ -222,7 +212,6 @@ function buildMiddleware(CFG) {
     return payload;
   }
 
-  // ---- normaliza texto: tira markdown-padrão, preserva WA-markup *_~ e emojis ----
   function normText(input, rep) {
     const s = input
       .replace(/\[([^\]]+)\]\((?:[^)]+)\)/g, '$1')
@@ -233,7 +222,7 @@ function buildMiddleware(CFG) {
       .replace(/^\s{0,3}>\s?/gm, '')
       .replace(/^\s*[-*+]\s+/gm, '')
       .replace(/[ \t]+\n/g, '\n').trim();
-    if (s !== input) push(rep, 'repairs', 'REPAIR_MARKDOWN_STRIPPED', 'markdown-padrão removido');
+    if (s !== input) push(rep, 'repairs', 'REPAIR_MARKDOWN_STRIPPED');
     return s;
   }
   function normalizeText(payload, rep) {
@@ -252,7 +241,6 @@ function buildMiddleware(CFG) {
     return payload;
   }
 
-  // ---- imagens: proxy (ou remove não-garantíveis no modo detect-only) ----
   const BAD_EXT = /\.(webp|avif|svg|gif|bmp|tiff?|heic|heif)(\.|$)/i;
   function normUrl(url) {
     if (!CFG.image.stripQuery) return { url, changed: false };
@@ -267,9 +255,9 @@ function buildMiddleware(CFG) {
     const img = CFG.image;
     const handle = (url) => {
       const n = normUrl(url);
-      if (n.changed) push(rep, 'repairs', 'REPAIR_URL_NORMALIZED', 'URL normalizada');
-      if (img.strategy === 'proxy' && img.proxyBase) { push(rep, 'repairs', 'REPAIR_IMAGE_PROXIED', 'imagem via proxy'); return { url: img.proxyBase + '?u=' + encodeURIComponent(n.url) }; }
-      if (looksUnverifiable(n.url)) { push(rep, 'pending', 'PENDING_IMAGE_UNVERIFIABLE', 'imagem não-garantível removida: ' + n.url); return { remove: true }; }
+      if (n.changed) push(rep, 'repairs', 'REPAIR_URL_NORMALIZED');
+      if (img.strategy === 'proxy' && img.proxyBase) { push(rep, 'repairs', 'REPAIR_IMAGE_PROXIED'); return { url: img.proxyBase + '?u=' + encodeURIComponent(n.url) }; }
+      if (looksUnverifiable(n.url)) { push(rep, 'pending', 'PENDING_IMAGE_UNVERIFIABLE'); return { remove: true }; }
       return { url: n.url };
     };
     for (const item of payload.messages || []) {
@@ -289,7 +277,6 @@ function buildMiddleware(CFG) {
     return payload;
   }
 
-  // ---- blocos + delays idempotentes (imagem→template = card) ----
   function kindOf(item) {
     if (typeof item === 'number') return 'DELAY';
     const att = item.message && item.message.attachment;
@@ -303,7 +290,7 @@ function buildMiddleware(CFG) {
     for (let i = 0; i < kinds.length; i++) {
       if (kinds[i] === 'IMAGE') {
         if (kinds[i + 1] === 'TEMPLATE') { cardStart.add(i); i++; }
-        else push(rep, 'warnings', 'WARN_BLOCK_AMBIGUOUS', 'imagem órfã na posição ' + i);
+        else push(rep, 'warnings', 'WARN_BLOCK_AMBIGUOUS');
       }
     }
     const d = CFG.delays, clamp = (n) => Math.min(d.max, Math.max(d.min, n));
@@ -319,11 +306,10 @@ function buildMiddleware(CFG) {
       if (cardStart.has(i)) seenCard = true;
       out.push(msgs[i]);
     }
-    if (msgs.length > 1) push(rep, 'repairs', 'REPAIR_DELAYS_INSERTED', 'delays inseridos');
+    if (msgs.length > 1) push(rep, 'repairs', 'REPAIR_DELAYS_INSERTED');
     return out;
   }
 
-  // ---- fallback: só a mensagem de espera (handoff é pendência, não ação emitida) ----
   function fallbackPayload() {
     return { messages: [{ message: { text: CFG.fallbackMessage } }] };
   }
@@ -339,14 +325,13 @@ function buildMiddleware(CFG) {
       if (Array.isArray(payload.messages)) payload.messages = insertDelays(payload.messages, rep);
       return { ok: true, data: payload, report: rep };
     } catch (e) {
-      rep.errors.push({ code: 'ERR_IRRECOVERABLE', message: String((e && e.message) || e) });
+      rep.errors.push({ code: 'ERR_IRRECOVERABLE' });
       return { ok: false, data: fallbackPayload(), report: rep };
     }
   }
   return { process };
 }
 
-// ===== EXECUÇÃO no n8n =====
 const MW = buildMiddleware(CONFIG);
 return $input.all().map((it) => {
   let raw = (it.json || {})[CONFIG.inputField];
@@ -357,3 +342,4 @@ return $input.all().map((it) => {
     [CONFIG.debugField]: { ok: r.ok, report: r.report },
   } };
 });
+```
