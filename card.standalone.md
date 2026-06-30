@@ -1,20 +1,11 @@
-# card.standalone — código limpo (colar no Code node NexTags)
-
-Versão enxuta, report = só códigos. Entra por `resposta_ia`, sai por `resposta_limpa`.
-Descritivo (o que cada código significa) fica em `card.standalone.js`.
-
 ```js
-// whatsapp-ai-middleware — CARD ÚNICO (NexTags / n8n Code node, "Run Once for All Items").
-// Entra pelo campo resposta_ia, sai pelo campo resposta_limpa.
-// A NexTags referencia esses campos como {{resposta_ia}} / {{resposta_limpa}} em outros nodes — não renomeie.
-
 const CONFIG = {
   inputField: 'resposta_ia',
   clientField: 'resposta_limpa',
   debugField: '_debug',
   stringifyClient: true,
   image: { strategy: 'proxy', proxyBase: 'https://nextags.app.br/webhook/cf-img-proxy', stripQuery: true },
-  delays: { intraCard: 4, interProduct: 7, bubble: 4, min: 1, max: 30 },
+  delays: { intraCard: 4, interProduct: 4, bubble: 4, min: 1, max: 30 },
   fallbackMessage: 'Só um instante que já te respondo 😊',
 };
 
