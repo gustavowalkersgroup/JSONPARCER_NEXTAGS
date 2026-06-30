@@ -3,3 +3,4 @@ dist/
 *.log
 .write_probe
 coverage/
+.claude/settings.json
